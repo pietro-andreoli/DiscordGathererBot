@@ -39,3 +39,4 @@ def find_card_request (message):
         curr_parse = msg[opening_brackets+1:closing_brackets]
         card_requests.append(curr_parse)
         msg = msg[closing_brackets+1:-1]
+#test
