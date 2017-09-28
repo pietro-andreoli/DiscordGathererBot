@@ -34,6 +34,8 @@ def find_card_request (message):
         #print(msg)
     return card_requests
 
+
+support_email = ""
 client = discord.Client()
 @client.event
 async def on_ready():
@@ -46,7 +48,7 @@ async def on_ready():
 async def on_message(message):
     requests = []
     if message.content.startswith("good bot"):
-        await client.send_message(message.channel, "Thanks :blush: :heart:")
+        await client.send_message(message.channel, "Thanks : :heart:")
     #Check if message has potential for  having a card request. Done by checking the number of open and close brackets
     if message.content.count('[[') == message.content.count(']]') and message.content.count('[[') != 0:
         #Parse the input, find all the card requests
@@ -54,14 +56,27 @@ async def on_message(message):
         await client.send_message(message.channel, 'Request received...')
         for card in requests:
             temp = Card.where(name=card).all()
+            print(card)
+            print(temp)
             if len(temp) == 0:
-                await client.send_message(message.channel,"The card " + card + "cant be found.")
+                await client.send_message(message.channel, "The card " + card + "cant be found. This is the closest "
+                                          + "I could find... sorry :frowning:")
+                temp = Card.where(name=card[1:-1]).all()
+            if len(temp) == 0:
+                await client.send_message(message.channel, "The card " + card + "cant be found."
+                                          + "\nIf you believe this is an error please email " + support_email)
             else:
-                set = 0
-                await client.send_message(message.channel,  "**\""+temp[set].name + "\"**\n" + temp[set].mana_cost + "\n"+
-                                          temp[set].type + "\n"+ temp[set].rarity + "\n"+ temp[set].text + "\n\n"+
-                                          temp[set].image_url)
-
+                #card_set = 1
+                for card_set in range(0, len(temp)):
+                    try:
+                        print(temp[card_set])
+                        await client.send_message(message.channel,  "**\""+temp[card_set].name + "\"**\n"
+                                                  + temp[card_set].mana_cost + "\n"+temp[card_set].type + "\n"
+                                                  + temp[card_set].rarity + "\n" + temp[card_set].text + "\n\n"
+                                                  + temp[card_set].image_url)
+                        break;
+                    except:
+                        print("Couldnt find a card at position "+str(card_set))
 
 
 
