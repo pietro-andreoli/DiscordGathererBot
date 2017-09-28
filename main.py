@@ -7,14 +7,16 @@ from mtgsdk import Type
 from mtgsdk import Supertype
 from mtgsdk import Subtype
 from mtgsdk import Changelog
+import configparser
+
+support_email = ""
+global client
+client = discord.Client()
+cfg = None
+first_time_setup = False
 
 
-
-#Parses the message and finds all requests for cards.
-#message - variable that holds the message that is to be parsed
-
-#card_library = Card.all()
-def find_card_request (message):
+def find_card_request(message):
     msg = message.content
     card_requests = []
     parsing = True
@@ -26,30 +28,68 @@ def find_card_request (message):
             break
         if closing_brackets < opening_brackets:
             break
-        curr_parse = "\""+msg[opening_brackets+2:closing_brackets]+"\""
+        curr_parse = "\"" + msg[opening_brackets + 2:closing_brackets] + "\""
         card_requests.append(curr_parse)
         print(curr_parse)
-        msg = msg[closing_brackets+2:]
-        #print("new request")
-        #print(msg)
+        msg = msg[closing_brackets + 2:]
+        # print("new request")
+        # print(msg)
     return card_requests
 
 
-support_email = ""
-client = discord.Client()
+def open_config():
+    global cfg
+    global first_time_setup
+    try:
+        cfg = open("cfg.ini", 'r+')
+
+    except OSError:
+        first_time_setup = True
+
+
+
+
+#Parses the message and finds all requests for cards.
+#message - variable that holds the message that is to be parsed
+
+#card_library = Card.all()
+
+
+
+
 @client.event
 async def on_ready():
     print('Logged in as: ')
     print(client.user.name)
     print(client.user.id)
     print('-------------')
+    global first_time_setup
+    first_time_setup = False
+    #open_config()
+    #test=client.get_channel("general")
+   # await client.send_message(test, "I'm ready!")
+    '''if first_time_setup:
+        await client.send_message(message.channel, 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
+                                  + " to do some setup.\n"
+                                  + "Right now a card fetch will look like the following.")
+        temp = Card.where(name="\"Opt\"").all()
+        card_set = 0
+        await client.send_message(message.channel, "**\"" + temp[card_set].name + "\"**\n"
+                                  + temp[card_set].mana_cost + "\n" + temp[card_set].type + "\n"
+                                  + temp[card_set].rarity + "\n" + temp[card_set].text + "\n\n"
+                                  + temp[card_set].image_url)
+'''
 
 @client.event
 async def on_message(message):
-    requests = []
+
+
+
+
     if message.content.startswith("good bot"):
-        await client.send_message(message.channel, "Thanks : :heart:")
+        await client.send_message(message.channel, "Thanks :smile: :heart:")
     #Check if message has potential for  having a card request. Done by checking the number of open and close brackets
+    # TODO create case for at least one valid request. Ex [[Opt]] [[ should get opt. [[opt]] [[opt]] ]]
     if message.content.count('[[') == message.content.count(']]') and message.content.count('[[') != 0:
         #Parse the input, find all the card requests
         requests = find_card_request(message)
