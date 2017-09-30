@@ -10,8 +10,9 @@ from mtgsdk import Changelog
 import configparser
 
 support_email = ""
-global client
+
 client = discord.Client()
+channels = client.get_all_channels()
 cfg = None
 first_time_setup = False
 
@@ -64,7 +65,16 @@ async def on_ready():
     print(client.user.id)
     print('-------------')
     global first_time_setup
-    first_time_setup = False
+    default_channel = None
+    for i in channels:
+        if i.is_default:
+            default_channel = i
+            break
+    await client.send_message(default_channel, "Fblthp armed and ready.")
+
+    #for i in channels:
+     #   print(type(i))
+    #first_time_setup = False
     #open_config()
     #test=client.get_channel("general")
    # await client.send_message(test, "I'm ready!")
@@ -82,7 +92,6 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-
 
 
 
