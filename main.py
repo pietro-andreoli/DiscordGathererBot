@@ -10,7 +10,7 @@ from mtgsdk import Changelog
 from configparser import ConfigParser
 import os.path
 support_email = ""
-
+#TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
 client = discord.Client()
 channels = client.get_all_channels()
 cfg = None
@@ -88,13 +88,18 @@ def create_config():
 
 async def fetch_card(requests, message):
     for card in requests:
+        if card == '\"\"' or card=="":
+            print("problem with: "+card)
+            continue
         temp = Card.where(name=card).all()
         print(card)
         print(temp)
         if len(temp) == 0:
-            await client.send_message(message.channel, "The card " + card + "cant be found. This is the closest "
-                                + "I could find... sorry :frowning:")
+
             temp = Card.where(name=card[1:-1]).all()
+            if len(temp) > 0:
+                await client.send_message(message.channel, "The card " + card + "cant be found. This is the closest "
+                                          + "I could find... sorry :frowning:")
         if len(temp) == 0:
             await client.send_message(message.channel, "The card " + card + "cant be found."
                                 + "\nIf you believe this is an error please email " + support_email)
@@ -110,7 +115,12 @@ async def fetch_card(requests, message):
                         if value == 'True':
                             print("Option:" +option)
                             attr = getattr(temp[card_set], option)
+                            #TODO This will mess things up when user turns on Loyalty printing and requests a card without loyalty. Find a better way to check if an attribute is missing
+                            if attr == None or attr == "None":
+                                raise ValueError
                             print('did this work 3')
+                            if option == "image_url":
+                                print(value)
                             request_output += str(attr)+"\n"
                             print('did this work 4')
                     print(request_output)
