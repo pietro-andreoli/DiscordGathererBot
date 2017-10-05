@@ -2,6 +2,7 @@ import discord
 from mtgsdk import Card
 from configparser import ConfigParser
 import os.path
+import ServerData
 support_email = ""
 # TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
 # TODO: Unit tests.
@@ -204,18 +205,19 @@ async def on_ready():
     # Gets all servers the bot is a member of, stores their id. In addition to this, the server IDs are used as the keys
     # for a dictionary. The loop stores the IDs in a list and uses that list as the value of the key in the dictionary.
     # The first element in each list is the default channel for that server.
-    for serv in client.servers:
+    for curr_server in client.servers:
         # Recording the servers ID for later use.
-        servers.append(serv.id)
+        servers.append(curr_server.id)
         # Setting up the server dictionary with the key.
-        server_database[serv.id] = []
+        server_database[curr_server.id] = []
         # Loops through all the channels the server has.
-        for channel in serv.channels:
+        for channel in curr_server.channels:
             # Adds the channel to the list. If its the default channel, put it first in the list.
             if channel.is_default:
-                server_database[serv.id].insert(0, channel.id)
+                server_database[curr_server.id].insert(0, channel.id)
             else:
-                server_database[serv.id].append(channel.id)
+                server_database[curr_server.id].append(channel.id)
+
     # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOK IS IMPLEMENTED PROPERLY
     default_channel = None
     for i in channels:
