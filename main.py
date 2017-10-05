@@ -1,23 +1,34 @@
 import discord
-import re
-import asyncio
 from mtgsdk import Card
-from mtgsdk import Set
-from mtgsdk import Type
-from mtgsdk import Supertype
-from mtgsdk import Subtype
-from mtgsdk import Changelog
 from configparser import ConfigParser
 import os.path
 support_email = ""
-#TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
+# TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
+# TODO: Unit tests.
+# Represents a client connection that connects to Discord. This class is used to interact with the Discord WebSocket
+# and API.
 client = discord.Client()
+# Garbage that should be taken out soon
 channels = client.get_all_channels()
+# The variable holding the open config file.
 cfg = None
-first_time_setup = False
+# Parser for navigating ini file for server print settings.
 cfg_parser = None
+# Dictionary that uses connected server IDs as keys, and channel IDs in a list as values.
+server_database = {}
+# All the servers the bot is a member of.
+servers = []
+
 
 def find_card_request(message):
+    """
+    Parse a message from the user and look for any card requests.
+    A card request is a set of double square brackets separated by a string that should be the card name.
+
+
+    :param: message: The message object the user sent.
+    :return: The list of card names that are being requested.
+    """
     msg = message.content
     card_requests = []
     parsing = True
@@ -40,9 +51,7 @@ def find_card_request(message):
 
 def open_config():
     global cfg
-    global first_time_setup
     cfg = open("cfg.ini", 'r+')
-
 
 
 def create_config():
@@ -115,7 +124,7 @@ async def fetch_card(requests, message):
                         if value == 'True':
                             print("Option:" +option)
                             attr = getattr(temp[card_set], option)
-                            #TODO This will mess things up when user turns on Loyalty printing and requests a card without loyalty. Find a better way to check if an attribute is missing
+                            # TODO This will mess things up when user turns on Loyalty printing and requests a card without loyalty. Find a better way to check if an attribute is missing
                             if attr == None or attr == "None":
                                 raise ValueError
                             print('did this work 3')
@@ -125,11 +134,6 @@ async def fetch_card(requests, message):
                             print('did this work 4')
                     print(request_output)
                     await client.send_message(message.channel, request_output)
-                    #await client.send_message(message.channel, "**\"" + temp[card_set].name + "\"**\n"
-                    #                    + temp[card_set].mana_cost + "\n" + temp[card_set].type + "\n"
-                    #                    + temp[card_set].rarity + "\n" + temp[card_set].text + "\n\n"
-                    #                    + temp[card_set].image_url)
-                    print("ayy lmao" + request_output)
                     break;
                 except:
                     print("Couldnt find a card at position " + str(card_set))
@@ -147,18 +151,33 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('-------------')
-    global first_time_setup
     global cfg
     global cfg_parser
+    global server_database
+    global servers
+    # Gets all servers the bot is a member of, stores their id. In addition to this, the server IDs are used as the keys
+    # for a dictionary. The loop stores the IDs in a list and uses that list as the value of the key in the dictionary.
+    # The first element in each list is the default channel for that server.
+    for serv in client.servers:
+        # Recording the servers ID for later use.
+        servers.append(serv.id)
+        # Setting up the server dictionary with the key.
+        server_database[serv.id] = []
+        # Loops through all the channels the server has.
+        for channel in serv.channels:
+            # Adds the channel to the list. If its the default channel, put it first in the list.
+            if channel.is_default:
+                server_database[serv.id].insert(0, channel.id)
+            else:
+                server_database[serv.id].append(channel.id)
+    # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOK IS IMPLEMENTED PROPERLY
     default_channel = None
     for i in channels:
         if i.is_default:
             default_channel = i
             break
-
-
+    # TODO: remove default_channel support from this and replace with the new dictionary method.
     if os.path.isfile("./cfg.ini"):
-
         open_config()
         await client.send_message(default_channel, "Fblthp armed and ready.")
         cfg_parser = ConfigParser()
