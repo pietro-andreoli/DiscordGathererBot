@@ -2,6 +2,7 @@ import discord
 from mtgsdk import Card
 from configparser import ConfigParser
 import os.path
+import atexit
 import ServerData
 support_email = ""
 # TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
@@ -232,13 +233,16 @@ async def on_ready():
         cfg_parser.read('cfg.ini')
         print(cfg_parser.get("Print Options", "Name"))
     else:
+        create_config()
+        cfg.close()
+        cfg_parser = ConfigParser()
+        cfg_parser.read('cfg.ini')
         await client.send_message(default_channel, 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
                                   + " to do some setup.\n"
                                   + "\nTo request a card, simply wrap the card name in double square brackets. "
                                   + "\nRight now a card fetch will look like the following."
                                   + "\n[[Opt]]")
-        create_config()
-        cfg.close()
+
 
 
 @client.event
@@ -252,4 +256,12 @@ async def on_message(message):
         await client.send_message(message.channel, 'Request received...')
         await fetch_card(requests, message)
 
+
+def on_exit():
+    print("closing")
+    global cfg
+    #cfg.close()
+
+
+atexit.register(on_exit)
 client.run('MzYyNDIyNzg0MzUxMTQxODg5.DKycFw.cEEp9aDXGD_FZ_tBXs64mrLw9dU')
