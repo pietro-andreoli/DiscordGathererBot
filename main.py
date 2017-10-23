@@ -3,10 +3,11 @@ from mtgsdk import Card
 from configparser import ConfigParser
 import os.path
 import atexit
-import ServerData
+from serverdata import ServerData
 support_email = ""
 # TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
 # TODO: Unit tests.
+# TODO: Handle when the bot is added to a server. (create the ini file and such)
 # Represents a client connection that connects to Discord. This class is used to interact with the Discord WebSocket
 # and API.
 client = discord.Client()
@@ -16,7 +17,7 @@ channels = client.get_all_channels()
 cfg = None
 # Parser for navigating ini file for server print settings.
 cfg_parser = None
-# Dictionary that uses connected server IDs as keys, and channel IDs in a list as values.
+# Dictionary that uses connected server IDs as keys, and ServerData objects as values.
 server_database = {}
 # All the servers the bot is a member of.
 servers = []
@@ -78,6 +79,54 @@ def create_config():
     global cfg
     # Creates an ini file with writing permission.
     cfg = open("cfg.ini", 'w+')
+    # Writes the following string to the file. This will control what is and isnt printed ofr a card fetch.
+    cfg.write("[Fetch Options]\n"
+              "Open Wrap Character: [[\n"
+              "Closed Wrap Character: ]]\n"
+              "[Print Options]\n"
+              "Name: True\n"
+              "Mana_Cost: True\n"
+              "CMC: False\n"
+              "Colors: False\n"
+              "Type: True\n"
+              "Supertypes: False\n"
+              "Subtypes: False\n"
+              "Types: False\n"
+              "Rarity: True\n"
+              "Text: True\n"
+              "Flavor: False\n"
+              "Artist: False\n"
+              "Number: False\n"
+              "Power: False\n"
+              "Toughness: False\n"
+              "Loyalty: False\n"
+              "Multiverse_ID: False\n"
+              "Variations: False\n"
+              "Watermark: False\n"
+              "Border: False\n"
+              "Timeshifted: False\n"
+              "Release_Date: False\n"
+              "Printings: False\n"
+              "Original_Text: False\n"
+              "Original_Type: False\n"
+              "Image_Url: True\n"
+              "Set:False\n"
+              "Set_Name: False\n"
+              "ID: False\n"
+              "Legalities: False\n"
+              "Rulings: False\n"
+              "Foreign_Names: False\n")
+
+
+def create_config(file_name):
+    """
+    Creates a configuration file.
+    This function needs to be updated to support multiple servers.
+    :return:
+    """
+    global cfg
+    # Creates an ini file with writing permission.
+    cfg = open(file_name, 'w+')
     # Writes the following string to the file. This will control what is and isnt printed ofr a card fetch.
     cfg.write("[Fetch Options]\n"
               "Open Wrap Character: [[\n"
@@ -188,7 +237,31 @@ async def fetch_card(requests, message):
                 except ValueError:
                     print("Couldnt find a card at position " + str(card_set))
 
-
+async def open_config(server):
+    """
+    Opens the config for a server using the ID in the object for that server
+    :param: server: ServerData object for the server.
+    :return:
+    """
+    global cfg_parser
+    cfg_path = "./"+server.server_id+".ini"
+    cfg_name = cfg_path[2:]
+    if os.path.isfile(cfg_path):
+        open_config()
+        # await client.send_message(server.get_default_channel(), "Fblthp armed and ready.")
+        cfg_parser = ConfigParser()
+        cfg_parser.read(cfg_name)
+        # print(cfg_parser.get("Print Options", "Name"))
+    else:
+        create_config(cfg_name)
+        cfg.close()
+        cfg_parser = ConfigParser()
+        cfg_parser.read('cfg.ini')
+        await client.send_message(server.get_default_channel(), 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
+                                  + " to do some setup.\n"
+                                  + "\nTo request a card, simply wrap the card name in double square brackets. "
+                                  + "\nRight now a card fetch will look like the following."
+                                  + "\n[[Opt]]")
 @client.event
 async def on_ready():
     """
@@ -204,22 +277,21 @@ async def on_ready():
     global server_database
     global servers
     # Gets all servers the bot is a member of, stores their id. In addition to this, the server IDs are used as the keys
-    # for a dictionary. The loop stores the IDs in a list and uses that list as the value of the key in the dictionary.
-    # The first element in each list is the default channel for that server.
+    # for a dictionary. The loop stores the server IDs and channels in a ServerData object and uses that as the value of
+    # the key in the dictionary.
     for curr_server in client.servers:
         # Recording the servers ID for later use.
         servers.append(curr_server.id)
         # Setting up the server dictionary with the key.
-        server_database[curr_server.id] = []
+        server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels)
         # Loops through all the channels the server has.
         for channel in curr_server.channels:
             # Adds the channel to the list. If its the default channel, put it first in the list.
             if channel.is_default:
-                server_database[curr_server.id].insert(0, channel.id)
-            else:
-                server_database[curr_server.id].append(channel.id)
 
-    # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOK IS IMPLEMENTED PROPERLY
+                server_database[curr_server.id].channel_list = [channel] + server_database[curr_server.id].channel_list
+    print(server_database)
+    # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOP IS IMPLEMENTED PROPERLY
     default_channel = None
     for i in channels:
         if i.is_default:
