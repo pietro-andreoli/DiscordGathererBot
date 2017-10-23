@@ -64,12 +64,6 @@ def find_card_request(message):
     return card_requests
 
 
-# def open_config():
-#     """Opens the configuration file."""
-#     global cfg
-#     cfg = open("cfg.ini", 'r+')
-
-
 def create_config():
     """
     Creates a configuration file.
@@ -289,31 +283,6 @@ async def on_ready():
         server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels)
         print(server_database[curr_server.id].channel_list)
         await open_config(server_database[curr_server.id])
-
-
-    # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOP IS IMPLEMENTED PROPERLY
-    # default_channel = None
-    # for i in channels:
-    #     if i.is_default:
-    #         default_channel = i
-    #         break
-    # TODO: remove default_channel support from this and replace with the new dictionary method.
-    # if os.path.isfile("./cfg.ini"):
-    #     open_config()
-    #     await client.send_message(default_channel, "Fblthp armed and ready.")
-    #     cfg_parser = ConfigParser()
-    #     cfg_parser.read('cfg.ini')
-    #     print(cfg_parser.get("Print Options", "Name"))
-    # else:
-    #     create_config()
-    #     cfg.close()
-    #     cfg_parser = ConfigParser()
-    #     cfg_parser.read('cfg.ini')
-    #     await client.send_message(default_channel, 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
-    #                               + " to do some setup.\n"
-    #                               + "\nTo request a card, simply wrap the card name in double square brackets. "
-    #                               + "\nRight now a card fetch will look like the following."
-    #                               + "\n[[Opt]]")
 
 
 
