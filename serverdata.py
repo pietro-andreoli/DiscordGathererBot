@@ -20,7 +20,17 @@ class ServerData:
 
     @channel_list.setter
     def channel_list(self, channels):
-        self.__channel_list = channels
+        channels = list(channels)
+        new_list = []
+        for i in range(0, len(channels)):
+            if channels[i].is_default:
+                new_list.insert(0, channels[i])
+                if i < len(channels):
+                    new_list = new_list + channels[i+1:]
+                break
+            else:
+                new_list.append(channels[i])
+        self.__channel_list = new_list
 
     @property
     def config_file(self):
@@ -32,3 +42,4 @@ class ServerData:
 
     def get_default_channel(self):
         return self.channel_list[0]
+

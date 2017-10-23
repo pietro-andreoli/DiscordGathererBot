@@ -64,10 +64,10 @@ def find_card_request(message):
     return card_requests
 
 
-def open_config():
-    """Opens the configuration file."""
-    global cfg
-    cfg = open("cfg.ini", 'r+')
+# def open_config():
+#     """Opens the configuration file."""
+#     global cfg
+#     cfg = open("cfg.ini", 'r+')
 
 
 def create_config():
@@ -237,6 +237,7 @@ async def fetch_card(requests, message):
                 except ValueError:
                     print("Couldnt find a card at position " + str(card_set))
 
+
 async def open_config(server):
     """
     Opens the config for a server using the ID in the object for that server
@@ -244,24 +245,26 @@ async def open_config(server):
     :return:
     """
     global cfg_parser
+    global cfg
     cfg_path = "./"+server.server_id+".ini"
     cfg_name = cfg_path[2:]
     if os.path.isfile(cfg_path):
-        open_config()
+        # open_config()
         # await client.send_message(server.get_default_channel(), "Fblthp armed and ready.")
         cfg_parser = ConfigParser()
         cfg_parser.read(cfg_name)
-        # print(cfg_parser.get("Print Options", "Name"))
     else:
         create_config(cfg_name)
         cfg.close()
         cfg_parser = ConfigParser()
-        cfg_parser.read('cfg.ini')
-        await client.send_message(server.get_default_channel(), 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
+        cfg_parser.read(cfg_name)
+        await client.send_message(server.get_default_channel(), 'Hello and thank you for using Fblthp, Gatherer Adept. '
+                                  + 'We\'re going'
                                   + " to do some setup.\n"
                                   + "\nTo request a card, simply wrap the card name in double square brackets. "
                                   + "\nRight now a card fetch will look like the following."
                                   + "\n[[Opt]]")
+
 @client.event
 async def on_ready():
     """
@@ -284,36 +287,33 @@ async def on_ready():
         servers.append(curr_server.id)
         # Setting up the server dictionary with the key.
         server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels)
-        # Loops through all the channels the server has.
-        for channel in curr_server.channels:
-            # Adds the channel to the list. If its the default channel, put it first in the list.
-            if channel.is_default:
+        print(server_database[curr_server.id].channel_list)
+        await open_config(server_database[curr_server.id])
 
-                server_database[curr_server.id].channel_list = [channel] + server_database[curr_server.id].channel_list
-    print(server_database)
+
     # TODO: THIS CODE SHOULD BE REMOVED WHEN THE ABOVE FOR LOOP IS IMPLEMENTED PROPERLY
-    default_channel = None
-    for i in channels:
-        if i.is_default:
-            default_channel = i
-            break
+    # default_channel = None
+    # for i in channels:
+    #     if i.is_default:
+    #         default_channel = i
+    #         break
     # TODO: remove default_channel support from this and replace with the new dictionary method.
-    if os.path.isfile("./cfg.ini"):
-        open_config()
-        await client.send_message(default_channel, "Fblthp armed and ready.")
-        cfg_parser = ConfigParser()
-        cfg_parser.read('cfg.ini')
-        print(cfg_parser.get("Print Options", "Name"))
-    else:
-        create_config()
-        cfg.close()
-        cfg_parser = ConfigParser()
-        cfg_parser.read('cfg.ini')
-        await client.send_message(default_channel, 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
-                                  + " to do some setup.\n"
-                                  + "\nTo request a card, simply wrap the card name in double square brackets. "
-                                  + "\nRight now a card fetch will look like the following."
-                                  + "\n[[Opt]]")
+    # if os.path.isfile("./cfg.ini"):
+    #     open_config()
+    #     await client.send_message(default_channel, "Fblthp armed and ready.")
+    #     cfg_parser = ConfigParser()
+    #     cfg_parser.read('cfg.ini')
+    #     print(cfg_parser.get("Print Options", "Name"))
+    # else:
+    #     create_config()
+    #     cfg.close()
+    #     cfg_parser = ConfigParser()
+    #     cfg_parser.read('cfg.ini')
+    #     await client.send_message(default_channel, 'Hello and thank you for using Fblthp, Gatherer Adept. We\'re going'
+    #                               + " to do some setup.\n"
+    #                               + "\nTo request a card, simply wrap the card name in double square brackets. "
+    #                               + "\nRight now a card fetch will look like the following."
+    #                               + "\n[[Opt]]")
 
 
 
