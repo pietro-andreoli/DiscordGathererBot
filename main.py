@@ -3,6 +3,7 @@ from mtgsdk import Card
 from configparser import ConfigParser
 import os.path
 import atexit
+import commands
 from serverdata import ServerData
 support_email = ""
 # TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
@@ -21,6 +22,8 @@ cfg_parser = None
 server_database = {}
 # All the servers the bot is a member of.
 servers = []
+# Command identifier. Warning: ensure the string ends with a space.
+cmd_key = "!fbl "
 
 
 def find_card_request(message):
@@ -62,54 +65,6 @@ def find_card_request(message):
         msg = msg[closing_brackets + 2:]
     # return the cards that were found.
     return card_requests
-
-
-def create_config():
-    """
-    Creates a configuration file.
-    This function needs to be updated to support multiple servers.
-    :return:
-    """
-    global cfg
-    # Creates an ini file with writing permission.
-    cfg = open("cfg.ini", 'w+')
-    # Writes the following string to the file. This will control what is and isnt printed ofr a card fetch.
-    cfg.write("[Fetch Options]\n"
-              "Open Wrap Character: [[\n"
-              "Closed Wrap Character: ]]\n"
-              "[Print Options]\n"
-              "Name: True\n"
-              "Mana_Cost: True\n"
-              "CMC: False\n"
-              "Colors: False\n"
-              "Type: True\n"
-              "Supertypes: False\n"
-              "Subtypes: False\n"
-              "Types: False\n"
-              "Rarity: True\n"
-              "Text: True\n"
-              "Flavor: False\n"
-              "Artist: False\n"
-              "Number: False\n"
-              "Power: False\n"
-              "Toughness: False\n"
-              "Loyalty: False\n"
-              "Multiverse_ID: False\n"
-              "Variations: False\n"
-              "Watermark: False\n"
-              "Border: False\n"
-              "Timeshifted: False\n"
-              "Release_Date: False\n"
-              "Printings: False\n"
-              "Original_Text: False\n"
-              "Original_Type: False\n"
-              "Image_Url: True\n"
-              "Set:False\n"
-              "Set_Name: False\n"
-              "ID: False\n"
-              "Legalities: False\n"
-              "Rulings: False\n"
-              "Foreign_Names: False\n")
 
 
 async def fluff_messages(message):
@@ -170,7 +125,15 @@ def create_config(file_name):
               "Foreign_Names: False\n")
 
 
-async def card_fetch_line_of_defense_two(card_name, channel, card_list):
+async def check_commands(message):
+    # Cuts out the command part of the request
+    text = message.content[len(cmd_key):]
+    print(text)
+    if text.startswith("help"):
+        await commands.cmd_help(client, message.channel)
+
+
+async def validate_card_fetch(card_name, channel, card_list):
     """
     This function is called when wanting to get the card details. But first you need to make sure the search for the
     card yielded a valid result.
@@ -190,11 +153,13 @@ async def card_fetch_line_of_defense_two(card_name, channel, card_list):
             # Tell the user it could not find the card and that this is the best guess.
             await client.send_message(channel, "The card " + card_name + "cant be found. This is the closest "
                                       + "I could find... sorry :frowning:")
+
     # If the list is empty then that means the card could not be found.
     if len(card_list) == 0:
         # Tell the user that the card could not be found.
         await client.send_message(channel, "The card " + card_name + "cant be found."
                                   + "\nIf you believe this is an error please email " + support_email)
+
     else:
         await get_card_details(card_list, channel)
 
@@ -218,9 +183,7 @@ async def fetch_card(requests, channel):
         # Fetch a card with the exact name as requested. It gets the exact name by having the quotes surrounding it
         # (added previously). temp becomes a list consisting of the requested card in each set it was printed in.
         temp = Card.where(name=card).all()
-        await card_fetch_line_of_defense_two(card, channel, temp)
-
-
+        await validate_card_fetch(card, channel, temp)
 
 
 async def get_card_details(card_options, channel):
@@ -242,7 +205,6 @@ async def get_card_details(card_options, channel):
             # cfg_parser.items("Print Options") gets the option-value pair from the ini file under the header
             # "Print Options".
             # Ex - The following would be in an ini file: card_name = True. option -> 'card_name' value -> True
-            # TODO: Find ways to make this more modular.
             for option, value in cfg_parser.items("Print Options"):
                 # If the option has been turned on, then print the detail related to this option.
                 if value == 'True':
@@ -295,6 +257,7 @@ async def open_config(server):
                                   + "\nRight now a card fetch will look like the following."
                                   + "\n[[Opt]]")
 
+
 @client.event
 async def on_ready():
     """
@@ -321,11 +284,12 @@ async def on_ready():
         await open_config(server_database[curr_server.id])
 
 
-
 @client.event
 async def on_message(message):
     await fluff_messages(message)
 
+    if message.content.startswith(cmd_key):
+        await check_commands(message)
     # Check if message has potential for  having a card request. Done by checking the number of open and close brackets
     if message.content.count('[[') > 0 and message.content.count(']]') > 0:
         # Parse the input, find all the card requests
