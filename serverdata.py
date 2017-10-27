@@ -1,5 +1,5 @@
 class ServerData:
-    """A class to hold all necessary data of one server the bot is a memeber of."""
+    """A class to hold all necessary data of one server the bot is a member of."""
 
     def __init__(self, server_id="", channels=[], config=None, parser=None):
         self.server_id = server_id
@@ -48,6 +48,6 @@ class ServerData:
     def parser(self):
         return self.__parser
 
-    @server_id.setter
+    @parser.setter
     def parser(self, parser):
         self.__parser = parser

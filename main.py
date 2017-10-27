@@ -123,10 +123,13 @@ def create_config(file_name):
                  "Legalities: False\n"
                  "Rulings: False\n"
                  "Foreign_Names: False\n")
+
     return config
+
 
 async def check_commands(message):
     # Cuts out the command part of the request
+    global server_database
     text = message.content[len(cmd_key):]
     print(text)
     server_id = message.server.id
@@ -134,17 +137,17 @@ async def check_commands(message):
         await commands.cmd_help(client, message.channel)
     elif text.startswith("set"):
         params = text[4:].split()
-        cfg_p = ConfigParser()
-        cfg_p.read(message.server.id + ".ini")
+        #cfg_p = ConfigParser()
+        #cfg_p.read(message.server.id + ".ini")
         # Handles the following input
         # Name Mana_Cost Set_name original_text true
         #Loops through the config options, sets them all to the value stated at the end
         for param_num in range(0, len(params)-1):
-            cfg_p.set('Print Options', params[param_num], params[-1])
+            server_database[server_id].parser.set('Print Options', params[param_num], params[-1])
             print(params[param_num] + " " + params[-1])
-            print("ummmmm" + cfg_p.get('Print Options', params[param_num]))
+            print("ummmmm" + server_database[server_id].parser.get('Print Options', params[param_num]))
 
-        cfg_p.write(server_database[server_id].config_file)
+        server_database[server_id].parser.write(server_database[server_id].config_file)
         #server_database[server_id].config_file.close()
 
 
@@ -215,14 +218,8 @@ async def get_card_details(card_options, channel):
     :param: message: The original message sent
     :return:
     """
-    print("heyo")
-    print(server_database[channel.server.id].parser)
-    if server_database[channel.server.id].parser is None:
-        print("test")
-        this_file = "./" + channel.server.id + ".ini"
-        server_database[channel.server.id].parser = ConfigParser()
-        server_database[channel.server.id].parser.read(this_file)
-        print("ayoooo" + type(server_database[channel.server.id].parser))
+    global server_database
+
     # Loop through the list of cards.
     for card_set in range(0, len(card_options)):
         # Try to print the desired card details. A ValueError is raised if there are any problems with getting
@@ -234,9 +231,9 @@ async def get_card_details(card_options, channel):
             # cfg_parser.items("Print Options") gets the option-value pair from the ini file under the header
             # "Print Options".
             # Ex - The following would be in an ini file: card_name = True. option -> 'card_name' value -> True
-            for option, value in cfg_parser.items("Print Options"):
+            for option, value in server_database[channel.server.id].parser.items("Print Options"):
                 # If the option has been turned on, then print the detail related to this option.
-                if value == 'True':
+                if value == 'True' or value == 'true':
                     print("Option:" + option)
                     # gets the value of the option from the card.
                     attr = getattr(card_options[card_set], option)
@@ -312,9 +309,9 @@ async def on_ready():
         # Recording the servers ID for later use.
         servers.append(curr_server.id)
         tmp = await open_config(curr_server)
-        #tmp = open("./" + curr_server.id + ".ini", 'r+')
-        # Setting up the server dictionary with the key.
-        server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels, tmp)
+        # Creates ServerData object using the server id, the channel list, the file object and a new parser
+        server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels, tmp, ConfigParser())
+        server_database[curr_server.id].parser.read(curr_server.id + ".ini")
         print(server_database[curr_server.id].channel_list)
 
 
