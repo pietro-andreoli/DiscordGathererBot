@@ -83,54 +83,75 @@ def create_config(file_name):
     This function needs to be updated to support multiple servers.
     :return:
     """
-    global cfg
-    # Creates an ini file with writing permission.
-    cfg = open(file_name, 'w+')
-    # Writes the following string to the file. This will control what is and isnt printed ofr a card fetch.
-    cfg.write("[Fetch Options]\n"
-              "Open Wrap Character: [[\n"
-              "Closed Wrap Character: ]]\n"
-              "[Print Options]\n"
-              "Name: True\n"
-              "Mana_Cost: True\n"
-              "CMC: False\n"
-              "Colors: False\n"
-              "Type: True\n"
-              "Supertypes: False\n"
-              "Subtypes: False\n"
-              "Types: False\n"
-              "Rarity: True\n"
-              "Text: True\n"
-              "Flavor: False\n"
-              "Artist: False\n"
-              "Number: False\n"
-              "Power: False\n"
-              "Toughness: False\n"
-              "Loyalty: False\n"
-              "Multiverse_ID: False\n"
-              "Variations: False\n"
-              "Watermark: False\n"
-              "Border: False\n"
-              "Timeshifted: False\n"
-              "Release_Date: False\n"
-              "Printings: False\n"
-              "Original_Text: False\n"
-              "Original_Type: False\n"
-              "Image_Url: True\n"
-              "Set:False\n"
-              "Set_Name: False\n"
-              "ID: False\n"
-              "Legalities: False\n"
-              "Rulings: False\n"
-              "Foreign_Names: False\n")
 
+    # Creates an ini file with writing permission.
+    config = open(file_name, 'w+')
+    # Writes the following string to the file. This will control what is and isnt printed ofr a card fetch.
+    config.write("[Fetch Options]\n"
+                 "Open Wrap Character: [[\n"
+                 "Closed Wrap Character: ]]\n"
+                 "[Print Options]\n" 
+                 "Name: True\n"
+                 "Mana_Cost: True\n"
+                 "CMC: False\n"
+                 "Colors: False\n"
+                 "Type: True\n"
+                 "Supertypes: False\n"
+                 "Subtypes: False\n"
+                 "Types: False\n"
+                 "Rarity: True\n"
+                 "Text: True\n"
+                 "Flavor: False\n"
+                 "Artist: False\n"
+                 "Number: False\n"
+                 "Power: False\n"
+                 "Toughness: False\n"
+                 "Loyalty: False\n"
+                 "Multiverse_ID: False\n"
+                 "Variations: False\n"
+                 "Watermark: False\n"
+                 "Border: False\n"
+                 "Timeshifted: False\n"
+                 "Release_Date: False\n"
+                 "Printings: False\n"
+                 "Original_Text: False\n"
+                 "Original_Type: False\n"
+                 "Image_Url: True\n"
+                 "Set:False\n"
+                 "Set_Name: False\n"
+                 "ID: False\n"
+                 "Legalities: False\n"
+                 "Rulings: False\n"
+                 "Foreign_Names: False\n")
+    return config
 
 async def check_commands(message):
     # Cuts out the command part of the request
     text = message.content[len(cmd_key):]
     print(text)
+    server_id = message.server.id
     if text.startswith("help"):
         await commands.cmd_help(client, message.channel)
+    elif text.startswith("set"):
+        params = text[4:].split()
+        cfg_p = ConfigParser()
+        cfg_p.read(message.server.id + ".ini")
+        # Handles the following input
+        # Name Mana_Cost Set_name original_text true
+        #Loops through the config options, sets them all to the value stated at the end
+        for param_num in range(0, len(params)-1):
+            cfg_p.set('Print Options', params[param_num], params[-1])
+            print(params[param_num] + " " + params[-1])
+            print("ummmmm" + cfg_p.get('Print Options', params[param_num]))
+
+        cfg_p.write(server_database[server_id].config_file)
+        #server_database[server_id].config_file.close()
+
+
+
+
+
+
 
 
 async def validate_card_fetch(card_name, channel, card_list):
@@ -194,6 +215,14 @@ async def get_card_details(card_options, channel):
     :param: message: The original message sent
     :return:
     """
+    print("heyo")
+    print(server_database[channel.server.id].parser)
+    if server_database[channel.server.id].parser is None:
+        print("test")
+        this_file = "./" + channel.server.id + ".ini"
+        server_database[channel.server.id].parser = ConfigParser()
+        server_database[channel.server.id].parser.read(this_file)
+        print("ayoooo" + type(server_database[channel.server.id].parser))
     # Loop through the list of cards.
     for card_set in range(0, len(card_options)):
         # Try to print the desired card details. A ValueError is raised if there are any problems with getting
@@ -233,29 +262,33 @@ async def get_card_details(card_options, channel):
 async def open_config(server):
     """
     Opens the config for a server using the ID in the object for that server
-    :param: server: ServerData object for the server.
+    :param: server: Server Object for the server.
     :return:
     """
     global cfg_parser
     global cfg
-    cfg_path = "./"+server.server_id+".ini"
+    cfg_path = "./" + server.id + ".ini"
     cfg_name = cfg_path[2:]
     if os.path.isfile(cfg_path):
         # open_config()
         # await client.send_message(server.get_default_channel(), "Fblthp armed and ready.")
+
         cfg_parser = ConfigParser()
         cfg_parser.read(cfg_name)
+        return open(cfg_path, "r+")
     else:
-        create_config(cfg_name)
+        tmp = create_config(cfg_name)
         cfg.close()
         cfg_parser = ConfigParser()
         cfg_parser.read(cfg_name)
-        await client.send_message(server.get_default_channel(), 'Hello and thank you for using Fblthp, Gatherer Adept. '
+        await client.send_message(server.default_channel, 'Hello and thank you for using Fblthp, Gatherer Adept. '
                                   + 'We\'re going'
                                   + " to do some setup.\n"
                                   + "\nTo request a card, simply wrap the card name in double square brackets. "
                                   + "\nRight now a card fetch will look like the following."
                                   + "\n[[Opt]]")
+        return tmp
+
 
 
 @client.event
@@ -278,10 +311,12 @@ async def on_ready():
     for curr_server in client.servers:
         # Recording the servers ID for later use.
         servers.append(curr_server.id)
+        tmp = await open_config(curr_server)
+        #tmp = open("./" + curr_server.id + ".ini", 'r+')
         # Setting up the server dictionary with the key.
-        server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels)
+        server_database[curr_server.id] = ServerData(curr_server.id, curr_server.channels, tmp)
         print(server_database[curr_server.id].channel_list)
-        await open_config(server_database[curr_server.id])
+
 
 
 @client.event
@@ -300,8 +335,10 @@ async def on_message(message):
 
 def on_exit():
     print("closing")
-    global cfg
-    #cfg.close()
+    global server_database
+    for server in server_database:
+        server.cfg_file.close()
+    print("FILES CLOSED")
 
 
 atexit.register(on_exit)

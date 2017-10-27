@@ -1,3 +1,4 @@
 The following commands must be preceeded by !fbl
     print-settings
-
+        !fbl set param1 param2
+            set - Sets the print option of param1 to the value of param2

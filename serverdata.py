@@ -1,10 +1,11 @@
 class ServerData:
     """A class to hold all necessary data of one server the bot is a memeber of."""
 
-    def __init__(self, server_id="", channels=[], config=None):
+    def __init__(self, server_id="", channels=[], config=None, parser=None):
         self.server_id = server_id
         self.channel_list = channels
         self.config_file = config
+        self.parser = parser
 
     @property
     def server_id(self):
@@ -43,3 +44,10 @@ class ServerData:
     def get_default_channel(self):
         return self.channel_list[0]
 
+    @property
+    def parser(self):
+        return self.__parser
+
+    @server_id.setter
+    def parser(self, parser):
+        self.__parser = parser
