@@ -130,25 +130,27 @@ def create_config(file_name):
 async def check_commands(message):
     # Cuts out the command part of the request
     global server_database
+    # Save text without command identifier
     text = message.content[len(cmd_key):]
     print(text)
     server_id = message.server.id
     if text.startswith("help"):
         await commands.cmd_help(client, message.channel)
     elif text.startswith("set"):
+        # Take out the 'set' command name, leaves only params in a list of strings
         params = text[4:].split()
-        #cfg_p = ConfigParser()
-        #cfg_p.read(message.server.id + ".ini")
-        # Handles the following input
-        # Name Mana_Cost Set_name original_text true
-        #Loops through the config options, sets them all to the value stated at the end
-        for param_num in range(0, len(params)-1):
-            server_database[server_id].parser.set('Print Options', params[param_num], params[-1])
-            print(params[param_num] + " " + params[-1])
-            print("ummmmm" + server_database[server_id].parser.get('Print Options', params[param_num]))
+        params[-1] = params[-1].lower()
+        if params[-1] in ("true", "false"):
+            # Loops through the config options, sets them all to the value stated at the end
+            for param_num in range(0, len(params)-1):
+                if server_database[server_id].parser.get("Print Options", params[param_num]).lower == params[-1]:
+                    continue
+                server_database[server_id].parser.set('Print Options', params[param_num], params[-1])
+                print(params[param_num] + " " + params[-1])
+                print("ummmmm" + server_database[server_id].parser.get('Print Options', params[param_num]))
 
         server_database[server_id].parser.write(server_database[server_id].config_file)
-        #server_database[server_id].config_file.close()
+
 
 
 
