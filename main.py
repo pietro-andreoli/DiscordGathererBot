@@ -152,13 +152,6 @@ async def check_commands(message):
         server_database[server_id].parser.write(server_database[server_id].config_file)
 
 
-
-
-
-
-
-
-
 async def validate_card_fetch(card_name, channel, card_list):
     """
     This function is called when wanting to get the card details. But first you need to make sure the search for the
@@ -185,9 +178,11 @@ async def validate_card_fetch(card_name, channel, card_list):
         # Tell the user that the card could not be found.
         await client.send_message(channel, "The card " + card_name + "cant be found."
                                   + "\nIf you believe this is an error please email " + support_email)
+        return [False, None];
 
     else:
-        await get_card_details(card_list, channel)
+        return [True, card_list]
+        #await get_card_details(card_list, channel)
 
         
 async def fetch_card(requests, channel):
@@ -208,9 +203,29 @@ async def fetch_card(requests, channel):
             continue
         # Fetch a card with the exact name as requested. It gets the exact name by having the quotes surrounding it
         # (added previously). temp becomes a list consisting of the requested card in each set it was printed in.
-        temp = Card.where(name=card).all()
-        await validate_card_fetch(card, channel, temp)
+        if "|" in card:
+            request_parts = card.split("|")
+            if len(request_parts > 2):
+                print("Error in custom card fetch: " + card)
+                continue
+            temp = Card.where(name=request_parts[0])
+            res = await validate_custom_card_fetch(card, channel, temp, request_parts)
+        else:
+            temp = Card.where(name=card).all()
+            res = await validate_card_fetch(card, channel, temp)
+            if res[0]:
+                await get_card_details(res[1], channel)
 
+
+async def validate_custom_card_fetch(card, channel, temp, request_parts):
+    # Card validity is denoted by True or False at index 0.
+    # Parameter validity is denoted by True or False at index 1.
+    # Card list is saved in index 2.
+    output = [False, False, card]
+    output[0] = await validate_card_fetch(card, channel, temp)
+    if output[0]:
+        # Validate the command
+        print()
 
 async def get_card_details(card_options, channel):
     """
