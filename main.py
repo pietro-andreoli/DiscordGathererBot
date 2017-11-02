@@ -9,6 +9,7 @@ support_email = ""
 # TODO: Cache requests and record how often theyre requested. After certain amount of time, delete cached requests of those with very low numbers
 # TODO: Unit tests.
 # TODO: Handle when the bot is added to a server. (create the ini file and such)
+# TODO: Create a tree for name searches. (A trie? cant remember)
 # Represents a client connection that connects to Discord. This class is used to interact with the Discord WebSocket
 # and API.
 client = discord.Client()
@@ -205,11 +206,18 @@ async def fetch_card(requests, channel):
         # (added previously). temp becomes a list consisting of the requested card in each set it was printed in.
         if "|" in card:
             request_parts = card.split("|")
-            if len(request_parts > 2):
+            if len(request_parts) > 2:
                 print("Error in custom card fetch: " + card)
                 continue
+            # When splitting the input by '|' we have separated the quotations surrounding the input. The next two if
+            # statements put the quote in the proper place.
+            if request_parts[0][-1] != "\"":
+                request_parts[0] = request_parts[0] + "\""
+            if request_parts[1][-1] == "\"":
+                request_parts[1] = request_parts[1][:-1]
             temp = Card.where(name=request_parts[0])
-            res = await validate_custom_card_fetch(card, channel, temp, request_parts)
+            print( request_parts[0])
+            res = await validate_custom_card_fetch(card, channel, temp, request_parts[1])
         else:
             temp = Card.where(name=card).all()
             res = await validate_card_fetch(card, channel, temp)
@@ -222,10 +230,29 @@ async def validate_custom_card_fetch(card, channel, temp, request_parts):
     # Parameter validity is denoted by True or False at index 1.
     # Card list is saved in index 2.
     output = [False, False, card]
-    output[0] = await validate_card_fetch(card, channel, temp)
+    output[0] = await validate_card_fetch(card, channel, temp.all())
     if output[0]:
         # Validate the command
+        command_parts = request_parts.split()
+        i = 0
+        while i < len(command_parts):
+            if command_parts[i].lower() == "-rulings":
+                print("rulings")
+
+            elif command_parts[i].lower() == "-set":
+                # Move to the param of the fetch option
+                i += 1
+                if command_parts[i].startswith('-'):
+                    print("Bad Parameters.")
+                    break
+                set_name = command_parts[i]
+            elif command_parts[i].lower() == "-image":
+                print("Image")
+
+            i += 1
+
         print()
+
 
 async def get_card_details(card_options, channel):
     """
