@@ -383,4 +383,6 @@ def on_exit():
 
 
 atexit.register(on_exit)
-client.run('MzYyNDIyNzg0MzUxMTQxODg5.DKycFw.cEEp9aDXGD_FZ_tBXs64mrLw9dU')
+token_file = open("bottoken.token", 'r')
+client.run(token_file.readline())
+token_file.close()
